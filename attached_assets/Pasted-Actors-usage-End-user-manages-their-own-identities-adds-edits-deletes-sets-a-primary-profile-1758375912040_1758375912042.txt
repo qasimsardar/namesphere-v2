@@ -1,0 +1,215 @@
+Actors & usage
+
+End user: manages their own identities (adds, edits, deletes, sets a primary profile).
+
+Consuming app / client: asks “who are you in this context?” and receives the scoped identity only.
+
+(Later) Auditor/Admin: reviews access history and policy logs (out of scope for phase-1 UI, but log entries created from day one). 
+
+FYP - Preliminary Report (2)
+
+Functional requirements (exact, phase-1)
+1) Authentication & session
+
+Users can sign up, log in, log out.
+
+Sessions persist; protected endpoints reject unauthenticated requests with clear errors.
+
+2) Identity profiles (minimum viable data)
+
+A user can create multiple identities. Each identity has:
+
+personalName (required).
+
+context (required, free-text for phase-1: e.g., legal, work, social, gaming).
+
+otherNames (optional array; nicknames, initials, former names).
+
+System fields: id, createdAt, updatedAt.
+
+Mark one identity as primary (default when no context is supplied). 
+
+FYP - Preliminary Report (2)
+
+3) Context-aware retrieval
+
+API returns the context-appropriate profile when a caller supplies a context via query string (phase-1) and never discloses attributes tied to other contexts.
+
+If no context is provided, return the primary profile.
+
+4) CRUD operations (scoped to owner)
+
+Create an identity.
+
+Read list or single identity, filtered by context and user ownership.
+
+Update an identity (only the owner).
+
+Delete an identity (only the owner).
+
+All writes generate an audit event (who/when/what changed), even if the UI to view it comes later. 
+
+FYP - Preliminary Report (2)
+
+5) Authorization & privacy rules
+
+A user can only access their own identities.
+
+No cross-context leakage: “legal” details must not appear in “social” responses, and vice versa.
+
+Return minimal fields for the requested context (“privacy by design”). 
+
+FYP - Preliminary Report (2)
+
+6) Dashboard (minimal)
+
+Log in screen.
+
+A simple dashboard to:
+
+List the current user’s identities.
+
+Filter by context.
+
+Create/update/delete identities.
+
+Toggle which identity is primary.
+
+(Developer view) Show the raw JSON of the API response alongside a human-readable card list. 
+
+FYP - Preliminary Report (2)
+
+7) Errors & edge cases
+
+Clear error messages for: invalid credentials, missing session, missing required fields, not found, and forbidden actions.
+
+Defensive checks to prevent duplicate contexts marked as primary simultaneously.
+
+Phase-1 stretch (optional if time allows): add optional attributes such as pronouns, title, avatar URL, and social links (still scoped by context). 
+
+FYP - Preliminary Report (2)
+
+Non-functional requirements (phase-1)
+
+Security first: defense-in-depth (session at API, row-level owner checks at data tier).
+
+Performance: reasonable p95 latency for basic CRUD; correctness over micro-optimisation.
+
+Auditability: writes create immutable log records from day one.
+
+Accessibility: dashboard uses readable contrast and keyboard-reachable controls.
+
+Documentation: endpoint reference with request/response schemas and example payloads. 
+
+FYP - Preliminary Report (2)
+
+API surface (deliver these endpoints)
+
+All endpoints are authenticated unless stated.
+
+POST /auth/signup – create account (email, password).
+
+POST /auth/login – start session.
+
+POST /auth/logout – end session.
+
+GET /identities?context={ctx} – list the current user’s identities filtered by context. If context omitted, return the primary identity first (and all others for management).
+
+POST /identities – create identity { personalName, context, otherNames? }.
+
+GET /identities/:id – fetch one identity (owner only).
+
+PUT /identities/:id – update fields (owner only).
+
+DELETE /identities/:id – delete (owner only).
+
+POST /identities/:id/set-primary – set identity as primary (auto-unset previous).
+
+(Write-only, no UI needed yet) POST /audit – internal creation from server code when any CRUD occurs (user id, op, entity id, diff snapshot). 
+
+FYP - Preliminary Report (2)
+
+Response shape (example):
+
+{
+  "id": "idn_34pv96",
+  "context": "work",
+  "personalName": "Mary J. Schofield",
+  "otherNames": ["Mary", "MJ"],
+  "createdAt": "2024-06-17T09:30:12.715Z",
+  "updatedAt": "2024-06-17T10:05:41.003Z",
+  "isPrimary": true
+}
+
+
+(Real content must follow the minimal-disclosure rule for the requested context.) 
+
+FYP - Preliminary Report (2)
+
+Data model (phase-1)
+
+User
+
+id, email, passwordHash
+
+Relation: User 1—n Identity
+
+Identity
+
+id, userId, personalName (required)
+
+context (required), otherNames (optional array)
+
+isPrimary (boolean, unique per user)
+
+createdAt, updatedAt
+
+AuditLog
+
+id, userId, entity (“identity”), entityId, operation (“create|update|delete”), diff, createdAt 
+
+FYP - Preliminary Report (2)
+
+User stories & acceptance criteria
+
+As a user, I can log in and stay logged in across dashboard pages.
+Accept: protected endpoints reject me if I’m not authenticated; dashboard loads my data after I log in.
+
+As a user, I can create multiple identities with a name and context.
+Accept: creating with missing personalName or context returns a validation error; successful create appears immediately in the list.
+
+As a user, I can fetch identities by context (e.g., work).
+Accept: only identities with that context are returned; if none exist, return empty array; if no context is supplied, the primary identity is returned first.
+
+As a user, I can only view/edit/delete my identities.
+Accept: attempts to access others’ identities return “forbidden” or “not found.”
+
+As a user, I can mark one identity as primary.
+Accept: setting a new primary unsets the old one atomically.
+
+As a user, I can see a human-friendly card list and a raw JSON view.
+Accept: both views show the same records; JSON mirrors the API payload. 
+
+FYP - Preliminary Report (2)
+
+What’s deliberately out of scope for phase-1
+
+Refresh-token rotation, full consent dialogs, data erasure workflow UI (we’ll log deletes now; full GDPR flow next phase).
+
+Advanced context negotiation via headers and languages (phase-2).
+
+Third-party integrations and shareable links.
+
+Caching layer and rate limiting (add after core is correct). 
+
+FYP - Preliminary Report (2)
+
+Why this aligns with your brief & mid-term progress
+
+It implements the core requirement: a secure REST API for identities that returns the correct, context-specific profile and hides other details.
+
+It preserves what you’ve already proven (login + CRUD + owner-only access) and formalises the must-have features for a clean MVP.
+
+It keeps optional fields, consent, and richer UI as next-phase items, exactly as outlined in your plan. 
+
+FYP - Preliminary Report (2)
