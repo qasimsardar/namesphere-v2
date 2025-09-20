@@ -44,7 +44,7 @@ export interface IStorage {
   getUserByCredentialsId(credentialsId: string): Promise<User | undefined>;
   
   // Cross-user context access
-  getIdentitiesByUserAndContext(targetUserId: string, context: string, requestingUserId: string): Promise<Identity[]>;
+  getIdentitiesByUserAndContext(targetUserId: string, context: string, requestingUserId: string): Promise<PublicIdentity[]>;
   
   // Public search operations
   searchPublicIdentities(context: string, query: string, limit: number, cursor?: string): Promise<SearchResult>;
@@ -114,14 +114,25 @@ export class DatabaseStorage implements IStorage {
     return result?.users;
   }
 
-  async getIdentitiesByUserAndContext(targetUserId: string, context: string, requestingUserId: string): Promise<Identity[]> {
-    // This is where we implement the cross-user context access logic
-    // For now, we'll allow access to any user's identities in any context
-    // In a real implementation, you'd add authorization logic here
+  async getIdentitiesByUserAndContext(targetUserId: string, context: string, requestingUserId: string): Promise<PublicIdentity[]> {
+    // Restrict cross-user access to only discoverable identities with whitelisted fields
     const results = await db
-      .select()
+      .select({
+        id: identities.id,
+        personalName: identities.personalName,
+        context: identities.context,
+        title: identities.title,
+        pronouns: identities.pronouns,
+        avatarUrl: identities.avatarUrl,
+        socialLinks: identities.socialLinks,
+        otherNames: identities.otherNames,
+      })
       .from(identities)
-      .where(and(eq(identities.userId, targetUserId), eq(identities.context, context)))
+      .where(and(
+        eq(identities.userId, targetUserId), 
+        eq(identities.context, context),
+        eq(identities.isDiscoverable, true) // Only discoverable identities
+      ))
       .orderBy(desc(identities.isPrimary), desc(identities.createdAt));
 
     // Create audit log for cross-user access
@@ -133,7 +144,12 @@ export class DatabaseStorage implements IStorage {
       diff: { context, targetUserId, accessedCount: results.length },
     });
 
-    return results;
+    // Map to PublicIdentity type with proper field handling
+    return results.map(row => ({
+      ...row,
+      socialLinks: row.socialLinks as Record<string, string>,
+      otherNames: row.otherNames || [],
+    }));
   }
 
   async getIdentities(userId: string, context?: string): Promise<Identity[]> {
