@@ -18,6 +18,16 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+// Helper function to extract user ID from different auth providers
+function getUserId(authUser: any): string | null {
+  if (authUser?.authProvider === "local") {
+    return authUser.id;
+  } else if (authUser?.claims?.sub) {
+    return authUser.claims.sub;
+  }
+  return null;
+}
+
 // Content negotiation helpers
 function negotiateContent(req: Request): 'json' | 'json-api' | 'csv' | 'xml' {
   const acceptHeader = req.headers.accept || 'application/json';
@@ -258,10 +268,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req, res) => {
     try {
       const authUser = req.user as any;
-      if (!authUser?.claims?.sub) {
+      const userId = getUserId(authUser);
+      if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = authUser.claims.sub;
+      
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -277,10 +288,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/identities', isAuthenticated, async (req, res) => {
     try {
       const authUser = req.user as any;
-      if (!authUser?.claims?.sub) {
+      const userId = getUserId(authUser);
+      if (!userId) {
         return sendFormattedResponse(res, { message: "Unauthorized" }, req, 401);
       }
-      const userId = authUser.claims.sub;
       const context = req.query.context as string | undefined;
       
       const identities = await storage.getIdentities(userId, context);
@@ -315,7 +326,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!authUser?.claims?.sub) {
         return sendFormattedResponse(res, { message: "Unauthorized" }, req, 401);
       }
-      const userId = authUser.claims.sub;
+      const userId = getUserId(authUser);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { id } = req.params;
       
       const identity = await storage.getIdentity(id, userId);
@@ -336,7 +350,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!authUser?.claims?.sub) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = authUser.claims.sub;
+      const userId = getUserId(authUser);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       
       // Validate request body
       const validation = insertIdentitySchema.safeParse(req.body);
@@ -372,7 +389,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!authUser?.claims?.sub) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = authUser.claims.sub;
+      const userId = getUserId(authUser);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { id } = req.params;
       
       console.log(`[${req.method}] /api/identities/${id} - User: ${userId}, Body:`, JSON.stringify(req.body, null, 2));
@@ -415,7 +435,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!authUser?.claims?.sub) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = authUser.claims.sub;
+      const userId = getUserId(authUser);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { id } = req.params;
       
       // Check if this is the only identity
@@ -444,7 +467,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!authUser?.claims?.sub) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const userId = authUser.claims.sub;
+      const userId = getUserId(authUser);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { id } = req.params;
       
       const identity = await storage.setPrimaryIdentity(id, userId);

@@ -181,7 +181,13 @@ export async function setupAuth(app: Express) {
             console.error("Login error:", loginErr);
             return res.redirect("/api/login");
           }
-          res.redirect("/");
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error("Session save error:", saveErr);
+              return res.redirect("/api/login");
+            }
+            res.redirect("/");
+          });
         });
       });
     })(req, res, next);
@@ -249,25 +255,35 @@ export async function setupAuth(app: Express) {
 
       // Log in the user automatically with session regeneration
       const sessionUser = createUserSession(user, "local", { credentialsId: credentials.id });
+      
       req.session.regenerate((err) => {
         if (err) {
           console.error("Session regeneration error:", err);
           return res.status(500).json({ message: "Registration successful but session creation failed" });
         }
+        
         req.login(sessionUser, (loginErr) => {
           if (loginErr) {
             console.error("Login error:", loginErr);
             return res.status(500).json({ message: "Registration successful but login failed" });
           }
-          res.status(201).json({
-            message: "Registration successful",
-            user: {
-              id: user.id,
-              email: user.email,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              authProvider: "local"
+          
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error("Session save error:", saveErr);
+              return res.status(500).json({ message: "Registration successful but session save failed" });
             }
+            
+            res.status(201).json({
+              message: "Registration successful",
+              user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                authProvider: "local"
+              }
+            });
           });
         });
       });
@@ -311,16 +327,21 @@ export async function setupAuth(app: Express) {
               console.error("Login error:", loginErr);
               return res.status(500).json({ message: "Login failed" });
             }
-            
-            res.json({
-              message: "Login successful",
-              user: {
-                id: user.id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                authProvider: user.authProvider
+            req.session.save((saveErr) => {
+              if (saveErr) {
+                console.error("Session save error:", saveErr);
+                return res.status(500).json({ message: "Login successful but session save failed" });
               }
+              res.json({
+                message: "Login successful",
+                user: {
+                  id: user.id,
+                  email: user.email,
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+                  authProvider: user.authProvider
+                }
+              });
             });
           });
         });

@@ -1,11 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { AuthTabs } from "@/components/AuthTabs";
 
 export default function Landing() {
-  const handleLogin = () => {
-    window.location.href = "/api/login";
-  };
-
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Hero */}
@@ -30,39 +25,24 @@ export default function Landing() {
                 <div className="w-2 h-2 bg-blue-200 rounded-full"></div>
                 <span className="text-blue-100">Comprehensive audit logging</span>
               </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-blue-200 rounded-full"></div>
+                <span className="text-blue-100">Dual authentication support</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Right Side - Login Form */}
+      {/* Right Side - Authentication */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <div className="lg:hidden mb-8">
-              <h1 className="text-3xl font-bold text-primary">Namesphere</h1>
-              <p className="text-muted-foreground mt-2">Secure identity management</p>
-            </div>
-            <h2 className="text-2xl font-semibold">Welcome back</h2>
-            <p className="text-muted-foreground mt-2">Sign in to manage your identities</p>
+          <div className="text-center lg:hidden mb-8">
+            <h1 className="text-3xl font-bold text-primary">Namesphere</h1>
+            <p className="text-muted-foreground mt-2">Secure identity management</p>
           </div>
           
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center space-y-4">
-                <p className="text-muted-foreground">
-                  Sign in with your Replit account to get started with secure identity management.
-                </p>
-                <Button 
-                  onClick={handleLogin}
-                  className="w-full py-3"
-                  data-testid="button-login"
-                >
-                  Sign in with Replit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <AuthTabs />
         </div>
       </div>
     </div>
