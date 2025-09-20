@@ -1,9 +1,12 @@
 import {
   users,
+  userCredentials,
   identities,
   auditLogs,
   type User,
   type UpsertUser,
+  type UserCredentials,
+  type InsertUserCredentials,
   type Identity,
   type InsertIdentity,
   type UpdateIdentity,
@@ -13,9 +16,18 @@ import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // User operations (supports both Replit Auth and username/password)
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  
+  // User credentials operations (for username/password auth)
+  createUserCredentials(credentials: InsertUserCredentials): Promise<UserCredentials>;
+  getUserCredentialsByUsername(username: string): Promise<UserCredentials | undefined>;
+  getUserByCredentialsId(credentialsId: string): Promise<User | undefined>;
+  
+  // Cross-user context access
+  getIdentitiesByUserAndContext(targetUserId: string, context: string, requestingUserId: string): Promise<Identity[]>;
   
   // Identity operations
   getIdentities(userId: string, context?: string): Promise<Identity[]>;
@@ -36,6 +48,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -49,6 +66,53 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async createUserCredentials(credentials: InsertUserCredentials): Promise<UserCredentials> {
+    const [userCreds] = await db
+      .insert(userCredentials)
+      .values(credentials)
+      .returning();
+    return userCreds;
+  }
+
+  async getUserCredentialsByUsername(username: string): Promise<UserCredentials | undefined> {
+    const [creds] = await db
+      .select()
+      .from(userCredentials)
+      .where(eq(userCredentials.username, username));
+    return creds;
+  }
+
+  async getUserByCredentialsId(credentialsId: string): Promise<User | undefined> {
+    const [result] = await db
+      .select()
+      .from(users)
+      .innerJoin(userCredentials, eq(users.id, userCredentials.userId))
+      .where(eq(userCredentials.id, credentialsId));
+    return result?.users;
+  }
+
+  async getIdentitiesByUserAndContext(targetUserId: string, context: string, requestingUserId: string): Promise<Identity[]> {
+    // This is where we implement the cross-user context access logic
+    // For now, we'll allow access to any user's identities in any context
+    // In a real implementation, you'd add authorization logic here
+    const results = await db
+      .select()
+      .from(identities)
+      .where(and(eq(identities.userId, targetUserId), eq(identities.context, context)))
+      .orderBy(desc(identities.isPrimary), desc(identities.createdAt));
+
+    // Create audit log for cross-user access
+    await this.createAuditLog({
+      userId: requestingUserId,
+      entity: "identity",
+      entityId: targetUserId,
+      operation: "cross-user-access",
+      diff: { context, targetUserId, accessedCount: results.length },
+    });
+
+    return results;
   }
 
   async getIdentities(userId: string, context?: string): Promise<Identity[]> {
