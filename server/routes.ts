@@ -6,6 +6,14 @@ import { insertIdentitySchema, updateIdentitySchema, type Identity } from "@shar
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
+// Search validation schemas
+const searchQuerySchema = z.object({
+  context: z.enum(["work", "gaming", "social", "legal"]),
+  q: z.string().min(0).max(100).optional().default(""),
+  limit: z.coerce.number().min(1).max(50).optional().default(20),
+  cursor: z.string().optional(),
+});
+
 interface AuthenticatedRequest extends Request {
   user?: {
     claims: {
@@ -479,6 +487,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error setting primary identity:", error);
       res.status(500).json({ message: "Failed to set primary identity" });
+    }
+  });
+
+  // Public search endpoints
+  app.get('/api/public/identities/search', isAuthenticated, async (req, res) => {
+    try {
+      const authUser = req.user as any;
+      const requestingUserId = getUserId(authUser);
+      if (!requestingUserId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Validate query parameters
+      const validation = searchQuerySchema.safeParse(req.query);
+      if (!validation.success) {
+        const error = fromZodError(validation.error);
+        return res.status(400).json({ 
+          message: "Validation error", 
+          details: error.message 
+        });
+      }
+
+      const { context, q, limit, cursor } = validation.data;
+      
+      // Perform search
+      const searchResult = await storage.searchPublicIdentities(context, q, limit, cursor);
+      
+      // Create audit log for search operation
+      await storage.createAuditLog({
+        userId: requestingUserId,
+        entity: "identity",
+        entityId: "search",
+        operation: "search",
+        diff: { context, query: q, resultCount: searchResult.identities.length },
+      });
+
+      res.json(searchResult);
+    } catch (error) {
+      console.error("Error searching public identities:", error);
+      res.status(500).json({ message: "Failed to search identities" });
+    }
+  });
+
+  app.get('/api/public/identities/:id', isAuthenticated, async (req, res) => {
+    try {
+      const authUser = req.user as any;
+      const requestingUserId = getUserId(authUser);
+      if (!requestingUserId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const identityId = req.params.id;
+      if (!identityId) {
+        return res.status(400).json({ message: "Identity ID is required" });
+      }
+
+      // Get public identity
+      const identity = await storage.getPublicIdentity(identityId);
+      if (!identity) {
+        return res.status(404).json({ message: "Identity not found or not discoverable" });
+      }
+
+      // Create audit log for view-profile operation
+      await storage.createAuditLog({
+        userId: requestingUserId,
+        entity: "identity",
+        entityId: identityId,
+        operation: "view-profile",
+        diff: { viewedContext: identity.context },
+      });
+
+      res.json(identity);
+    } catch (error) {
+      console.error("Error fetching public identity:", error);
+      res.status(500).json({ message: "Failed to fetch identity" });
     }
   });
 
