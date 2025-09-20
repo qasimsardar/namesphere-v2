@@ -391,9 +391,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const updateIdentityHandler = async (req: Request, res: Response) => {
     try {
       const authUser = req.user as any;
-      if (!authUser?.claims?.sub) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
       const userId = getUserId(authUser);
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
