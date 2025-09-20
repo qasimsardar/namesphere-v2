@@ -141,7 +141,7 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]" data-testid="modal-edit-identity">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col" data-testid="modal-edit-identity">
         <DialogHeader>
           <DialogTitle>Edit Identity</DialogTitle>
           <DialogDescription>
@@ -149,7 +149,8 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="overflow-y-auto flex-1 pr-1">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit-personalName">Personal Name *</Label>
             <Input
@@ -289,7 +290,8 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
               {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

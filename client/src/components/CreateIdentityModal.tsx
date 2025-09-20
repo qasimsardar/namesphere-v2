@@ -122,7 +122,7 @@ export function CreateIdentityModal({ open, onOpenChange }: CreateIdentityModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]" data-testid="modal-create-identity">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col" data-testid="modal-create-identity">
         <DialogHeader>
           <DialogTitle>Create New Identity</DialogTitle>
           <DialogDescription>
@@ -130,7 +130,8 @@ export function CreateIdentityModal({ open, onOpenChange }: CreateIdentityModalP
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="overflow-y-auto flex-1 pr-1">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="personalName">Personal Name *</Label>
             <Input
@@ -269,7 +270,8 @@ export function CreateIdentityModal({ open, onOpenChange }: CreateIdentityModalP
               {createMutation.isPending ? "Creating..." : "Create Identity"}
             </Button>
           </div>
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
