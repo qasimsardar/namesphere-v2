@@ -28,6 +28,7 @@ import { insertIdentitySchema } from "@shared/schema";
 
 const formSchema = insertIdentitySchema.extend({
   otherNamesInput: z.string().optional(),
+  socialLinksInput: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -48,22 +49,38 @@ export function CreateIdentityModal({ open, onOpenChange }: CreateIdentityModalP
       context: "",
       otherNames: [],
       otherNamesInput: "",
+      pronouns: "",
+      title: "",
+      avatarUrl: "",
+      socialLinks: {},
+      socialLinksInput: "",
       isPrimary: false,
     },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const { otherNamesInput, ...identityData } = data;
+      const { otherNamesInput, socialLinksInput, ...identityData } = data;
       
       // Parse other names from comma-separated string
       const otherNames = otherNamesInput
         ? otherNamesInput.split(",").map(name => name.trim()).filter(name => name.length > 0)
         : [];
 
+      // Parse social links from JSON string
+      let socialLinks = {};
+      if (socialLinksInput && socialLinksInput.trim()) {
+        try {
+          socialLinks = JSON.parse(socialLinksInput);
+        } catch (e) {
+          throw new Error("Invalid social links format. Please use valid JSON like {\"twitter\": \"https://twitter.com/username\"}");
+        }
+      }
+
       const payload = {
         ...identityData,
         otherNames,
+        socialLinks,
       };
 
       const response = await apiRequest("POST", "/api/identities", payload);
@@ -161,6 +178,49 @@ export function CreateIdentityModal({ open, onOpenChange }: CreateIdentityModalP
             />
             <p className="text-xs text-muted-foreground">
               Optional: Enter multiple names separated by commas
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pronouns">Pronouns</Label>
+            <Input
+              id="pronouns"
+              placeholder="e.g., they/them, she/her, he/him"
+              {...form.register("pronouns")}
+              data-testid="input-pronouns"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              placeholder="e.g., Dr., Mr., Ms., Engineer"
+              {...form.register("title")}
+              data-testid="input-title"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="avatarUrl">Avatar URL</Label>
+            <Input
+              id="avatarUrl"
+              placeholder="https://example.com/avatar.jpg"
+              {...form.register("avatarUrl")}
+              data-testid="input-avatar-url"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="socialLinks">Social Links</Label>
+            <Input
+              id="socialLinks"
+              placeholder='{"twitter": "https://twitter.com/username", "linkedin": "https://linkedin.com/in/username"}'
+              {...form.register("socialLinksInput")}
+              data-testid="input-social-links"
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional: Enter as JSON format, e.g., {`{"twitter": "https://twitter.com/username"}`}
             </p>
           </div>
 

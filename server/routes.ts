@@ -1,4 +1,4 @@
-import type { Express, Request } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -131,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/identities/:id', isAuthenticated, async (req, res) => {
+  const updateIdentityHandler = async (req: Request, res: Response) => {
     try {
       const authUser = req.user as any;
       if (!authUser?.claims?.sub) {
@@ -140,10 +140,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = authUser.claims.sub;
       const { id } = req.params;
       
+      console.log(`[${req.method}] /api/identities/${id} - User: ${userId}, Body:`, JSON.stringify(req.body, null, 2));
+      
       // Validate request body
       const validation = updateIdentitySchema.safeParse(req.body);
       if (!validation.success) {
         const error = fromZodError(validation.error);
+        console.error("Validation error:", error.message);
         return res.status(400).json({ 
           message: "Validation error", 
           details: error.message 
@@ -151,18 +154,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updates = validation.data;
+      console.log("Validated updates:", JSON.stringify(updates, null, 2));
+      
       const identity = await storage.updateIdentity(id, userId, updates);
       
       if (!identity) {
+        console.log("Identity not found for id:", id, "userId:", userId);
         return res.status(404).json({ message: "Identity not found" });
       }
       
+      console.log("Updated identity:", JSON.stringify(identity, null, 2));
       res.json(identity);
     } catch (error) {
       console.error("Error updating identity:", error);
       res.status(500).json({ message: "Failed to update identity" });
     }
-  });
+  };
+
+  app.put('/api/identities/:id', isAuthenticated, updateIdentityHandler);
+  app.patch('/api/identities/:id', isAuthenticated, updateIdentityHandler);
 
   app.delete('/api/identities/:id', isAuthenticated, async (req, res) => {
     try {

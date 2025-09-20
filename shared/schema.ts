@@ -40,6 +40,11 @@ export const identities = pgTable("identities", {
   personalName: text("personal_name").notNull(),
   context: text("context").notNull(),
   otherNames: text("other_names").array().default([]),
+  // Optional attributes for enhanced identity profiles
+  pronouns: text("pronouns"),
+  title: text("title"),
+  avatarUrl: text("avatar_url"),
+  socialLinks: jsonb("social_links").default({}), // {platform: url} mapping
   isPrimary: boolean("is_primary").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -86,7 +91,9 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
-export const insertIdentitySchema = createInsertSchema(identities).omit({
+export const insertIdentitySchema = createInsertSchema(identities, {
+  socialLinks: z.record(z.string(), z.string().url()).optional().default({}),
+}).omit({
   id: true,
   userId: true,
   createdAt: true,

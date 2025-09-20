@@ -28,6 +28,7 @@ import { updateIdentitySchema, type Identity } from "@shared/schema";
 
 const formSchema = updateIdentitySchema.extend({
   otherNamesInput: z.string().optional(),
+  socialLinksInput: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -49,6 +50,11 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
       context: "",
       otherNames: [],
       otherNamesInput: "",
+      pronouns: "",
+      title: "",
+      avatarUrl: "",
+      socialLinks: {},
+      socialLinksInput: "",
       isPrimary: false,
     },
   });
@@ -61,6 +67,11 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
         context: identity.context,
         otherNames: identity.otherNames || [],
         otherNamesInput: (identity.otherNames || []).join(", "),
+        pronouns: identity.pronouns || "",
+        title: identity.title || "",
+        avatarUrl: identity.avatarUrl || "",
+        socialLinks: identity.socialLinks || {},
+        socialLinksInput: identity.socialLinks ? JSON.stringify(identity.socialLinks, null, 2) : "",
         isPrimary: identity.isPrimary,
       });
     }
@@ -68,16 +79,27 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
 
   const updateMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const { otherNamesInput, ...identityData } = data;
+      const { otherNamesInput, socialLinksInput, ...identityData } = data;
       
       // Parse other names from comma-separated string
       const otherNames = otherNamesInput
         ? otherNamesInput.split(",").map(name => name.trim()).filter(name => name.length > 0)
         : [];
 
+      // Parse social links from JSON string
+      let socialLinks = {};
+      if (socialLinksInput && socialLinksInput.trim()) {
+        try {
+          socialLinks = JSON.parse(socialLinksInput);
+        } catch (e) {
+          throw new Error("Invalid social links format. Please use valid JSON like {\"twitter\": \"https://twitter.com/username\"}");
+        }
+      }
+
       const payload = {
         ...identityData,
         otherNames,
+        socialLinks,
       };
 
       const response = await apiRequest("PUT", `/api/identities/${identity.id}`, payload);
@@ -175,6 +197,49 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
             />
             <p className="text-xs text-muted-foreground">
               Optional: Enter multiple names separated by commas
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-pronouns">Pronouns</Label>
+            <Input
+              id="edit-pronouns"
+              placeholder="e.g., they/them, she/her, he/him"
+              {...form.register("pronouns")}
+              data-testid="input-edit-pronouns"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-title">Title</Label>
+            <Input
+              id="edit-title"
+              placeholder="e.g., Dr., Mr., Ms., Engineer"
+              {...form.register("title")}
+              data-testid="input-edit-title"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-avatarUrl">Avatar URL</Label>
+            <Input
+              id="edit-avatarUrl"
+              placeholder="https://example.com/avatar.jpg"
+              {...form.register("avatarUrl")}
+              data-testid="input-edit-avatar-url"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-socialLinks">Social Links</Label>
+            <Input
+              id="edit-socialLinks"
+              placeholder='{"twitter": "https://twitter.com/username", "linkedin": "https://linkedin.com/in/username"}'
+              {...form.register("socialLinksInput")}
+              data-testid="input-edit-social-links"
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional: Enter as JSON format, e.g., {`{"twitter": "https://twitter.com/username"}`}
             </p>
           </div>
 
