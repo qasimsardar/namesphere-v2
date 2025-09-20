@@ -331,9 +331,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/identities/:id', isAuthenticated, async (req, res) => {
     try {
       const authUser = req.user as any;
-      if (!authUser?.claims?.sub) {
-        return sendFormattedResponse(res, { message: "Unauthorized" }, req, 401);
-      }
       const userId = getUserId(authUser);
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
@@ -434,9 +431,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/identities/:id', isAuthenticated, async (req, res) => {
     try {
       const authUser = req.user as any;
-      if (!authUser?.claims?.sub) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
       const userId = getUserId(authUser);
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
@@ -466,9 +460,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/identities/:id/set-primary', isAuthenticated, async (req, res) => {
     try {
       const authUser = req.user as any;
-      if (!authUser?.claims?.sub) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
       const userId = getUserId(authUser);
       if (!userId) {
         return res.status(401).json({ message: "Unauthorized" });
