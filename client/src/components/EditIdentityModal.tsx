@@ -56,6 +56,7 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
       socialLinks: {},
       socialLinksInput: "",
       isPrimary: false,
+      isDiscoverable: false,
     },
   });
 
@@ -73,6 +74,7 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
         socialLinks: identity.socialLinks || {},
         socialLinksInput: identity.socialLinks ? JSON.stringify(identity.socialLinks, null, 2) : "",
         isPrimary: identity.isPrimary,
+        isDiscoverable: identity.isDiscoverable || false,
       });
     }
   }, [identity, form]);
@@ -254,6 +256,21 @@ export function EditIdentityModal({ open, onOpenChange, identity }: EditIdentity
               Set as primary identity
             </Label>
           </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="edit-setDiscoverable"
+              checked={form.watch("isDiscoverable") || false}
+              onCheckedChange={(checked) => form.setValue("isDiscoverable", checked === true)}
+              data-testid="checkbox-edit-set-discoverable"
+            />
+            <Label htmlFor="edit-setDiscoverable" className="text-sm">
+              Make discoverable in public search
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            When enabled, this identity will appear in search results for other users in the same context
+          </p>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button

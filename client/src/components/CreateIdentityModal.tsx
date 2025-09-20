@@ -55,6 +55,7 @@ export function CreateIdentityModal({ open, onOpenChange }: CreateIdentityModalP
       socialLinks: {},
       socialLinksInput: "",
       isPrimary: false,
+      isDiscoverable: false,
     },
   });
 
@@ -235,6 +236,21 @@ export function CreateIdentityModal({ open, onOpenChange }: CreateIdentityModalP
               Set as primary identity
             </Label>
           </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="setDiscoverable"
+              checked={form.watch("isDiscoverable") || false}
+              onCheckedChange={(checked) => form.setValue("isDiscoverable", checked === true)}
+              data-testid="checkbox-set-discoverable"
+            />
+            <Label htmlFor="setDiscoverable" className="text-sm">
+              Make discoverable in public search
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            When enabled, this identity will appear in search results for other users in the same context
+          </p>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button
