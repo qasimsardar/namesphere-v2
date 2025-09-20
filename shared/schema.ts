@@ -60,6 +60,7 @@ export const identities = pgTable("identities", {
   avatarUrl: text("avatar_url"),
   socialLinks: jsonb("social_links").default({}), // {platform: url} mapping
   isPrimary: boolean("is_primary").default(false),
+  isDiscoverable: boolean("is_discoverable").default(false), // Controls visibility in public search
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

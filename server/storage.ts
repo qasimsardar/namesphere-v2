@@ -13,7 +13,24 @@ import {
   type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, ilike, or, sql } from "drizzle-orm";
+
+// Public identity type with whitelisted fields for search
+export type PublicIdentity = {
+  id: string;
+  personalName: string;
+  context: string;
+  title: string | null;
+  pronouns: string | null;
+  avatarUrl: string | null;
+  socialLinks: Record<string, string>;
+  otherNames: string[];
+};
+
+export type SearchResult = {
+  identities: PublicIdentity[];
+  hasMore: boolean;
+};
 
 export interface IStorage {
   // User operations (supports both Replit Auth and username/password)
@@ -28,6 +45,10 @@ export interface IStorage {
   
   // Cross-user context access
   getIdentitiesByUserAndContext(targetUserId: string, context: string, requestingUserId: string): Promise<Identity[]>;
+  
+  // Public search operations
+  searchPublicIdentities(context: string, query: string, limit: number, cursor?: string): Promise<SearchResult>;
+  getPublicIdentity(id: string): Promise<PublicIdentity | undefined>;
   
   // Identity operations
   getIdentities(userId: string, context?: string): Promise<Identity[]>;
@@ -271,6 +292,86 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(identities.userId, userId), eq(identities.isPrimary, true)));
     
     return identity;
+  }
+
+  async searchPublicIdentities(context: string, query: string, limit: number, cursor?: string): Promise<SearchResult> {
+    // Build search conditions
+    const conditions = [
+      eq(identities.context, context),
+      eq(identities.isDiscoverable, true)
+    ];
+    
+    // Add text search conditions
+    if (query.trim()) {
+      const searchPattern = `%${query}%`;
+      conditions.push(
+        or(
+          ilike(identities.personalName, searchPattern),
+          ilike(identities.title, searchPattern),
+          // Search in other_names array using EXISTS with unnest
+          sql`EXISTS(SELECT 1 FROM unnest(${identities.otherNames}) AS name WHERE name ILIKE ${searchPattern})`
+        )!
+      );
+    }
+
+    // Add cursor condition for pagination
+    if (cursor) {
+      conditions.push(sql`(${identities.createdAt}, ${identities.id}) < (SELECT created_at, id FROM ${identities} WHERE id = ${cursor})`);
+    }
+
+    // Execute query with limit + 1 to check for more results
+    const results = await db
+      .select({
+        id: identities.id,
+        personalName: identities.personalName,
+        context: identities.context,
+        title: identities.title,
+        pronouns: identities.pronouns,
+        avatarUrl: identities.avatarUrl,
+        socialLinks: identities.socialLinks,
+        otherNames: identities.otherNames,
+      })
+      .from(identities)
+      .where(and(...conditions))
+      .orderBy(desc(identities.isPrimary), desc(identities.createdAt), desc(identities.id))
+      .limit(limit + 1);
+
+    // Check if there are more results
+    const hasMore = results.length > limit;
+    const identitiesResult = hasMore ? results.slice(0, limit) : results;
+
+    return {
+      identities: identitiesResult.map(row => ({
+        ...row,
+        socialLinks: row.socialLinks as Record<string, string>,
+        otherNames: row.otherNames || [],
+      })),
+      hasMore,
+    };
+  }
+
+  async getPublicIdentity(id: string): Promise<PublicIdentity | undefined> {
+    const [result] = await db
+      .select({
+        id: identities.id,
+        personalName: identities.personalName,
+        context: identities.context,
+        title: identities.title,
+        pronouns: identities.pronouns,
+        avatarUrl: identities.avatarUrl,
+        socialLinks: identities.socialLinks,
+        otherNames: identities.otherNames,
+      })
+      .from(identities)
+      .where(and(eq(identities.id, id), eq(identities.isDiscoverable, true)));
+
+    if (!result) return undefined;
+
+    return {
+      ...result,
+      socialLinks: result.socialLinks as Record<string, string>,
+      otherNames: result.otherNames || [],
+    };
   }
 
   async createAuditLog(auditLog: InsertAuditLog): Promise<void> {
