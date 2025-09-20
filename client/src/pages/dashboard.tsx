@@ -8,16 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Code, User, Star, Edit, Trash2 } from "lucide-react";
+import { Plus, Code, User, Star, Edit, Trash2, Search } from "lucide-react";
 import { CreateIdentityModal } from "@/components/CreateIdentityModal";
 import { EditIdentityModal } from "@/components/EditIdentityModal";
 import { IdentityCard } from "@/components/IdentityCard";
 import type { Identity } from "@shared/schema";
+import { useLocation } from "wouter";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [location, setLocation] = useLocation();
   
   const [selectedContext, setSelectedContext] = useState<string>("");
   const [showJsonView, setShowJsonView] = useState(false);
@@ -166,6 +168,14 @@ export default function Dashboard() {
               <nav className="hidden md:flex gap-6">
                 <button className="text-foreground hover:text-primary font-medium">
                   Identities
+                </button>
+                <button 
+                  onClick={() => setLocation("/search")}
+                  className="text-muted-foreground hover:text-primary font-medium flex items-center gap-2"
+                  data-testid="nav-search"
+                >
+                  <Search className="w-4 h-4" />
+                  Search
                 </button>
               </nav>
             </div>
