@@ -5,6 +5,9 @@ import { sql } from 'drizzle-orm';
 // Set test environment variables
 process.env.NODE_ENV = 'test';
 process.env.SESSION_SECRET = 'test-session-secret';
+process.env.REPLIT_DOMAINS = 'localhost:5000';
+process.env.REPL_ID = 'test-repl-id';
+process.env.ISSUER_URL = 'https://replit.com/oidc';
 
 // Increase timeout for database operations
 jest.setTimeout(30000);

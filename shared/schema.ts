@@ -140,6 +140,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const insertIdentitySchema = createInsertSchema(identities, {
+  context: z.enum(["work", "gaming", "social", "legal"]),
   socialLinks: z.record(z.string(), z.string().url()).optional().default({}),
 }).omit({
   id: true,
