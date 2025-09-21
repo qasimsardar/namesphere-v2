@@ -1,6 +1,6 @@
 import { db } from '../db';
-import { users, userCredentials, identities } from '@shared/schema';
-import type { User, Identity, UserCredentials, InsertIdentity } from '@shared/schema';
+import { users, userCredentials, identities } from '../../shared/schema';
+import type { User, Identity, UserCredentials, InsertIdentity } from '../../shared/schema';
 import { hashPassword } from '../replitAuth';
 import { nanoid } from 'nanoid';
 import request from 'supertest';

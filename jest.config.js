@@ -13,10 +13,7 @@ export default {
       }
     }]
   },
-  moduleNameMapping: {
-    '^@shared/(.*)$': '<rootDir>/shared/$1'
-  },
-  setupFilesAfterEnv: ['<rootDir>/server/__tests__/setup.ts'],
+  // setupFilesAfterEnv: ['<rootDir>/server/__tests__/setup.ts'],
   testTimeout: 10000,
   collectCoverageFrom: [
     'server/**/*.ts',

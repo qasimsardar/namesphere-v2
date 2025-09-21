@@ -14,7 +14,7 @@ import {
   CONTEXTS,
   SAMPLE_SOCIAL_LINKS
 } from './test-utils';
-import type { Identity } from '@shared/schema';
+import type { Identity } from '../../shared/schema';
 
 describe('Identity Management Endpoints', () => {
   let app: Express;
