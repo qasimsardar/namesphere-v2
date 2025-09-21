@@ -2,8 +2,9 @@ import { beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals'
 import { db } from '../db';
 import { sql } from 'drizzle-orm';
 
-// Set test environment variable
+// Set test environment variables
 process.env.NODE_ENV = 'test';
+process.env.SESSION_SECRET = 'test-session-secret';
 
 // Increase timeout for database operations
 jest.setTimeout(30000);
@@ -21,6 +22,7 @@ beforeAll(async () => {
     console.log('✅ Test database connection established');
   } catch (error) {
     console.error('❌ Failed to connect to test database:', error);
+    console.error('Please ensure DATABASE_URL points to a test database');
     throw error;
   }
 });

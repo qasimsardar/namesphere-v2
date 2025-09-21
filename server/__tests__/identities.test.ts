@@ -1,8 +1,7 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import type { Express } from 'express';
-import { registerRoutes } from '../routes';
-import express from 'express';
+import { createTestApp } from './test-app';
 import { 
   createTestUser, 
   createTestIdentity, 
@@ -20,8 +19,7 @@ describe('Identity Management Endpoints', () => {
   let app: Express;
 
   beforeAll(async () => {
-    app = express();
-    await registerRoutes(app);
+    app = await createTestApp();
   });
 
   afterAll(async () => {
