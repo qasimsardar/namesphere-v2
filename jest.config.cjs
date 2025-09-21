@@ -1,16 +1,16 @@
-export default {
-  preset: 'ts-jest/presets/default-esm',
-  extensionsToTreatAsEsm: ['.ts'],
+module.exports = {
+  preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/server', '<rootDir>/shared'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  testPathIgnorePatterns: ['<rootDir>/client/', '/node_modules/'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(openid-client|oauth4webapi)/)'
+  ],
   transform: {
     '^.+\\.ts$': ['ts-jest', {
-      useESM: true,
-      tsconfig: {
-        module: 'ESNext',
-        target: 'ES2020'
-      }
+      tsconfig: 'tsconfig.jest.json',
+      diagnostics: { warnOnly: true }
     }]
   },
   moduleNameMapper: {
@@ -18,6 +18,8 @@ export default {
   },
   setupFilesAfterEnv: ['<rootDir>/server/__tests__/setup.ts'],
   testTimeout: 10000,
+  maxWorkers: 1,
+  cacheDirectory: '.jest-cache',
   collectCoverageFrom: [
     'server/**/*.ts',
     'shared/**/*.ts',
